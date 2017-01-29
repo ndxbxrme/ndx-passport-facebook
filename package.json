@@ -1,6 +1,6 @@
 {
   "name": "ndx-passport-facebook",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "facebook plugin for ndx-passport",
   "main": "build/index.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "url": "https://github.com/ndxbxrme/ndx-passport-facebook"
   },
   "author": "ndxbxrme",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/ndxbxrme/ndx-passport-facebook/issues"
   },

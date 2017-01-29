@@ -32,6 +32,7 @@
           } else {
             newUser = {
               _id: ObjectID.generate(),
+              email: profile.emails[0].value,
               facebook: {
                 id: profile.id,
                 token: token,

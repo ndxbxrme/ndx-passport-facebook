@@ -6,7 +6,9 @@ module.exports = (ndx) ->
   ndx.settings.FACEBOOK_KEY = process.env.FACEBOOK_KEY or ndx.settings.FACEBOOK_KEY
   ndx.settings.FACEBOOK_SECRET = process.env.FACEBOOK_SECRET or ndx.settings.FACEBOOK_SECRET
   ndx.settings.FACEBOOK_CALLBACK = process.env.FACEBOOK_CALLBACK or ndx.settings.FACEBOOK_CALLBACK
+  ndx.settings.FACEBOOK_SCOPE = process.env.FACEBOOK_SCOPE or ndx.settings.FACEBOOK_SCOPE or 'email'
   if ndx.settings.FACEBOOK_KEY
+    scopes = ndx.passport.splitScopes ndx.settings.FACEBOOK_SCOPE
     ndx.passport.use new FacebookStrategy
       clientID: ndx.settings.FACEBOOK_KEY
       clientSecret: ndx.settings.FACEBOOK_SECRET
@@ -49,12 +51,11 @@ module.exports = (ndx) ->
           req.user._id
         ]
         return done null, req.user
-    ndx.app.get '/api/facebook', ndx.passport.authenticate('facebook', scope: 'email')
+    ndx.app.get '/api/facebook', ndx.passport.authenticate('facebook', scope: scopes)
     , ndx.postAuthenticate
     ndx.app.get '/api/facebook/callback', ndx.passport.authenticate('facebook')
     , ndx.postAuthenticate
-    ndx.app.get '/api/connect/facebook', ndx.passport.authorize('facebook',
-      scope: 'email')
+    ndx.app.get '/api/connect/facebook', ndx.passport.authorize('facebook', scope: scopes)
     ndx.app.get '/api/unlink/facebook', (req, res) ->
       user = req.user
       user.facebook.token = undefined

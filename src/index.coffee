@@ -15,7 +15,7 @@ module.exports = (ndx) ->
       callbackURL: ndx.settings.FACEBOOK_CALLBACK
       passReqToCallback: true
     , (req, token, refreshToken, profile, done) ->
-      if not req user
+      if not req.user
         users = ndx.database.exec 'SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE facebook->id=?', [profile.id]
         if users and users.length
           if not users[0].facebook.token
@@ -25,7 +25,7 @@ module.exports = (ndx) ->
                 name: profile.name.givenName + ' ' + profile.name.familyName
                 email: profile.emails[0].value
               },
-              req.user._id
+              users[0]._id
             ]
             return done null, users[0]
           return done null, users[0]

@@ -17,7 +17,7 @@
         passReqToCallback: true
       }, function(req, token, refreshToken, profile, done) {
         var newUser, users;
-        if (!req(user)) {
+        if (!req.user) {
           users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE facebook->id=?', [profile.id]);
           if (users && users.length) {
             if (!users[0].facebook.token) {
@@ -26,7 +26,7 @@
                   token: token,
                   name: profile.name.givenName + ' ' + profile.name.familyName,
                   email: profile.emails[0].value
-                }, req.user._id
+                }, users[0]._id
               ]);
               return done(null, users[0]);
             }

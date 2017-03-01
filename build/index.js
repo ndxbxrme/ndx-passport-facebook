@@ -18,16 +18,22 @@
       }, function(req, token, refreshToken, profile, done) {
         var newUser, users;
         if (!req.user) {
-          users = ndx.database.exec('SELECT * FROM ' + ndx.settings.USER_TABLE + ' WHERE facebook->id=?', [profile.id]);
+          users = ndx.database.select(ndx.settings.USER_TABLE, {
+            facebook: {
+              id: profile.id
+            }
+          });
           if (users && users.length) {
             if (!users[0].facebook.token) {
-              ndx.database.exec('UPDATE ' + ndx.settings.USER_TABLE + ' SET facebook=? WHERE _id=?', [
-                {
+              ndx.database.update(ndx.settings.USER_TABLE, {
+                facebook: {
                   token: token,
                   name: profile.name.givenName + ' ' + profile.name.familyName,
                   email: profile.emails[0].value
-                }, users[0]._id
-              ]);
+                }
+              }, {
+                _id: users[0]._id
+              });
               return done(null, users[0]);
             }
             return done(null, users[0]);
@@ -42,18 +48,20 @@
                 email: profile.emails[0].value
               }
             };
-            ndx.database.exec('INSERT INTO ' + ndx.settings.USER_TABLE + ' VALUES ?', [newUser]);
+            ndx.database.insert(ndx.settings.USER_TABLE, newUser);
             return done(null, newUser);
           }
         } else {
-          ndx.database.exec('UPDATE ' + ndx.settings.USER_TABLE + ' SET facebook=? WHERE _id=?', [
-            {
+          ndx.database.update(ndx.settings.USER_TABLE, {
+            facebook: {
               id: profile.id,
               token: token,
               name: profile.name.givenName + ' ' + profile.name.familyName,
               email: profile.emails[0].value
-            }, req.user._id
-          ]);
+            }
+          }, {
+            _id: req.user._id
+          });
           return done(null, req.user);
         }
       }));

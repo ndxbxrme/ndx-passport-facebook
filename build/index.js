@@ -1,14 +1,30 @@
 (function() {
   'use strict';
   module.exports = function(ndx) {
-    var FacebookStrategy, ObjectID, scopes;
+    var FacebookStrategy, ObjectID, objtrans, scopes;
     FacebookStrategy = require('passport-facebook').Strategy;
     ObjectID = require('bson-objectid');
+    objtrans = require('objtrans');
     ndx.settings.FACEBOOK_KEY = process.env.FACEBOOK_KEY || ndx.settings.FACEBOOK_KEY;
     ndx.settings.FACEBOOK_SECRET = process.env.FACEBOOK_SECRET || ndx.settings.FACEBOOK_SECRET;
     ndx.settings.FACEBOOK_CALLBACK = process.env.FACEBOOK_CALLBACK || ndx.settings.FACEBOOK_CALLBACK;
     ndx.settings.FACEBOOK_SCOPE = process.env.FACEBOOK_SCOPE || ndx.settings.FACEBOOK_SCOPE || 'email';
     if (ndx.settings.FACEBOOK_KEY) {
+      if (!ndx.transforms.facebook) {
+        ndx.transforms.facebook = {
+          email: 'profile.emails[0].value',
+          facebook: {
+            id: 'profile.id',
+            token: 'token',
+            name: function(input) {
+              if (input) {
+                return input.profile.name.givenName + ' ' + input.profile.name.familyName;
+              }
+            },
+            email: 'profile.emails[0].value'
+          }
+        };
+      }
       scopes = ndx.passport.splitScopes(ndx.settings.FACEBOOK_SCOPE);
       ndx.passport.use(new FacebookStrategy({
         clientID: ndx.settings.FACEBOOK_KEY,
@@ -16,6 +32,7 @@
         callbackURL: ndx.settings.FACEBOOK_CALLBACK,
         passReqToCallback: true
       }, function(req, token, refreshToken, profile, done) {
+        var updateUser;
         if (!req.user) {
           return ndx.database.select(ndx.settings.USER_TABLE, {
             where: {
@@ -24,45 +41,35 @@
               }
             }
           }, function(users) {
-            var newUser;
+            var newUser, updateUser;
             if (users && users.length) {
               if (!users[0].facebook.token) {
-                ndx.database.update(ndx.settings.USER_TABLE, {
-                  facebook: {
-                    token: token,
-                    name: profile.name.givenName + ' ' + profile.name.familyName,
-                    email: profile.emails[0].value
-                  }
-                }, {
+                updateUser = objtrans({
+                  token: token,
+                  profile: profile
+                }, ndx.transforms.facebook);
+                ndx.database.update(ndx.settings.USER_TABLE, updateUser, {
                   _id: users[0]._id
                 });
                 return done(null, users[0]);
               }
               return done(null, users[0]);
             } else {
-              newUser = {
-                _id: ObjectID.generate(),
-                email: profile.emails[0].value,
-                facebook: {
-                  id: profile.id,
-                  token: token,
-                  name: profile.name.givenName + ' ' + profile.name.familyName,
-                  email: profile.emails[0].value
-                }
-              };
+              newUser = objtrans({
+                token: token,
+                profile: profile
+              }, ndx.transforms.facebook);
+              newUser._id = ObjectID.generate();
               ndx.database.insert(ndx.settings.USER_TABLE, newUser);
               return done(null, newUser);
             }
           });
         } else {
-          ndx.database.update(ndx.settings.USER_TABLE, {
-            facebook: {
-              id: profile.id,
-              token: token,
-              name: profile.name.givenName + ' ' + profile.name.familyName,
-              email: profile.emails[0].value
-            }
-          }, {
+          updateUser = objtrans({
+            token: token,
+            profile: profile
+          }, ndx.transforms.facebook);
+          ndx.database.update(ndx.settings.USER_TABLE, updateUser, {
             _id: req.user._id
           });
           return done(null, req.user);

@@ -1,6 +1,6 @@
 {
   "name": "ndx-passport-facebook",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "facebook plugin for ndx-passport",
   "main": "build/index.js",
   "scripts": {
@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "bson-objectid": "^1.1.5",
+    "objtrans": "0.0.5",
     "passport-facebook": "^2.1.1"
   }
 }

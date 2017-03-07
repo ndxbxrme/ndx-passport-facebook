@@ -1,10 +1,15 @@
 (function() {
   'use strict';
+  var FacebookStrategy, ObjectID, objtrans;
+
+  FacebookStrategy = require('passport-facebook').Strategy;
+
+  ObjectID = require('bson-objectid');
+
+  objtrans = require('objtrans');
+
   module.exports = function(ndx) {
-    var FacebookStrategy, ObjectID, objtrans, scopes;
-    FacebookStrategy = require('passport-facebook').Strategy;
-    ObjectID = require('bson-objectid');
-    objtrans = require('objtrans');
+    var scopes;
     ndx.settings.FACEBOOK_KEY = process.env.FACEBOOK_KEY || ndx.settings.FACEBOOK_KEY;
     ndx.settings.FACEBOOK_SECRET = process.env.FACEBOOK_SECRET || ndx.settings.FACEBOOK_SECRET;
     ndx.settings.FACEBOOK_CALLBACK = process.env.FACEBOOK_CALLBACK || ndx.settings.FACEBOOK_CALLBACK;
@@ -32,7 +37,7 @@
         callbackURL: ndx.settings.FACEBOOK_CALLBACK,
         passReqToCallback: true
       }, function(req, token, refreshToken, profile, done) {
-        var updateUser;
+        var updateUser, where;
         if (!req.user) {
           return ndx.database.select(ndx.settings.USER_TABLE, {
             where: {
@@ -41,16 +46,16 @@
               }
             }
           }, function(users) {
-            var newUser, updateUser;
+            var newUser, updateUser, where;
             if (users && users.length) {
               if (!users[0].facebook.token) {
                 updateUser = objtrans({
                   token: token,
                   profile: profile
                 }, ndx.transforms.facebook);
-                ndx.database.update(ndx.settings.USER_TABLE, updateUser, {
-                  _id: users[0]._id
-                });
+                where = {};
+                where[ndx.settings.AUTO_ID] = users[0][ndx.settings.AUTO_ID];
+                ndx.database.update(ndx.settings.USER_TABLE, updateUser, where);
                 return done(null, users[0]);
               }
               return done(null, users[0]);
@@ -59,7 +64,7 @@
                 token: token,
                 profile: profile
               }, ndx.transforms.facebook);
-              newUser._id = ObjectID.generate();
+              newUser[ndx.settings.AUTO_ID] = ObjectID.generate();
               ndx.database.insert(ndx.settings.USER_TABLE, newUser);
               return done(null, newUser);
             }
@@ -69,9 +74,9 @@
             token: token,
             profile: profile
           }, ndx.transforms.facebook);
-          ndx.database.update(ndx.settings.USER_TABLE, updateUser, {
-            _id: req.user._id
-          });
+          where = {};
+          where[ndx.settings.AUTO_ID] = req.user[ndx.settings.AUTO_ID];
+          ndx.database.update(ndx.settings.USER_TABLE, updateUser, where);
           return done(null, req.user);
         }
       }));

@@ -16,41 +16,44 @@
         callbackURL: ndx.settings.FACEBOOK_CALLBACK,
         passReqToCallback: true
       }, function(req, token, refreshToken, profile, done) {
-        var newUser, users;
         if (!req.user) {
-          users = ndx.database.select(ndx.settings.USER_TABLE, {
-            facebook: {
-              id: profile.id
+          return ndx.database.select(ndx.settings.USER_TABLE, {
+            where: {
+              facebook: {
+                id: profile.id
+              }
             }
-          });
-          if (users && users.length) {
-            if (!users[0].facebook.token) {
-              ndx.database.update(ndx.settings.USER_TABLE, {
+          }, function(users) {
+            var newUser;
+            if (users && users.length) {
+              if (!users[0].facebook.token) {
+                ndx.database.update(ndx.settings.USER_TABLE, {
+                  facebook: {
+                    token: token,
+                    name: profile.name.givenName + ' ' + profile.name.familyName,
+                    email: profile.emails[0].value
+                  }
+                }, {
+                  _id: users[0]._id
+                });
+                return done(null, users[0]);
+              }
+              return done(null, users[0]);
+            } else {
+              newUser = {
+                _id: ObjectID.generate(),
+                email: profile.emails[0].value,
                 facebook: {
+                  id: profile.id,
                   token: token,
                   name: profile.name.givenName + ' ' + profile.name.familyName,
                   email: profile.emails[0].value
                 }
-              }, {
-                _id: users[0]._id
-              });
-              return done(null, users[0]);
+              };
+              ndx.database.insert(ndx.settings.USER_TABLE, newUser);
+              return done(null, newUser);
             }
-            return done(null, users[0]);
-          } else {
-            newUser = {
-              _id: ObjectID.generate(),
-              email: profile.emails[0].value,
-              facebook: {
-                id: profile.id,
-                token: token,
-                name: profile.name.givenName + ' ' + profile.name.familyName,
-                email: profile.emails[0].value
-              }
-            };
-            ndx.database.insert(ndx.settings.USER_TABLE, newUser);
-            return done(null, newUser);
-          }
+          });
         } else {
           ndx.database.update(ndx.settings.USER_TABLE, {
             facebook: {

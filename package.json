@@ -1,6 +1,6 @@
 {
   "name": "ndx-passport-facebook",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "facebook plugin for ndx-passport",
   "main": "build/index.js",
   "scripts": {

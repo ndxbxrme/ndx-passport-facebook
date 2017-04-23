@@ -44,6 +44,9 @@ module.exports = (ndx) ->
               ndx.user = users[0]
               return done null, users[0]
             ndx.user = users[0]
+            if ndx.auth
+              ndx.auth.extendUser()
+            ndx.passport.syncCallback 'login', ndx.user
             return done null, users[0]
           else
             newUser = objtrans
@@ -53,6 +56,9 @@ module.exports = (ndx) ->
             newUser[ndx.settings.AUTO_ID] = ndx.generateID()
             ndx.database.insert ndx.settings.USER_TABLE, newUser, null, true
             ndx.user = newUser
+            if ndx.auth
+              ndx.auth.extendUser()
+            ndx.passport.syncCallback 'signup', ndx.user
             return done null, newUser
         , true
       else
